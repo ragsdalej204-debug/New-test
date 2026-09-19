@@ -1,0 +1,47 @@
+#!/usr/bin/env python3
+"""
+EMP Waveform Simulation Tool
+Generates IEC-compliant HEMP E1 pulse profiles based on custom parameters.
+"""
+
+import argparse
+import numpy as np
+import matplotlib.pyplot as plt
+
+def generate_waveform(peak_kv, alpha, beta, k=1.3, duration_ns=1000, resolution=5000):
+    # Convert parameters to standard metric units
+    e0 = peak_kv * 1000
+    time_array = np.linspace(0, duration_ns * 1e-9, resolution)
+    
+    # Calculate double exponential field strength
+    field_v_m = e0 * k * (np.exp(-beta * time_array) - np.exp(-alpha * time_array))
+    return time_array, field_v_m
+
+def main():
+    parser = argparse.ArgumentParser(description="Simulate a High-Altitude EMP (HEMP) E1 Waveform.")
+    parser.add_argument("--peak", type=float, default=50.0, help="Peak electric field strength in kV/m (Default: 50.0)")
+    parser.add_argument("--rise", type=float, default=4.0e8, help="Rise time decay factor alpha (Default: 4.0e8)")
+    parser.add_argument("--decay", type=float, default=6.0e6, help="Fall time decay factor beta (Default: 6.0e6)")
+    parser.add_argument("--duration", type=float, default=1000.0, help="Simulation time window in nanoseconds (Default: 1000)")
+    parser.add_argument("--output", type=str, default="emp_pulse.png", help="Filename to save the plotted chart")
+    
+    args = parser.parse_args()
+    
+    print(f"[*] Simulating EMP pulse: {args.peak} kV/m peak field strength...")
+    t, e_field = generate_waveform(args.peak, args.rise, args.decay, duration_ns=args.duration)
+    
+    # Generate the chart
+    plt.figure(figsize=(10, 5))
+    plt.plot(t * 1e9, e_field / 1000, color='darkorange', linewidth=2, label='E1 Pulse Profile')
+    plt.title(f"EMP Waveform: {args.peak} kV/m Peak Simulation", fontsize=12, fontweight='bold')
+    plt.xlabel("Time (nanoseconds)", fontsize=10)
+    plt.ylabel("Electric Field (kV / meter)", fontsize=10)
+    plt.grid(True, linestyle=':', alpha=0.7)
+    plt.xlim(0, args.duration)
+    plt.legend()
+    
+    plt.savefig(args.output, dpi=300)
+    print(f"[+] Success! Waveform visualization saved as '{args.output}'.")
+
+if __name__ == "__main__":
+    main()
